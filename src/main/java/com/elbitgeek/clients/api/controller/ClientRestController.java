@@ -58,9 +58,22 @@ public class ClientRestController {
 	}
 	
 	@PostMapping("/clients")
-	@ResponseStatus(HttpStatus.CREATED)
-	public Client create(@RequestBody Client client) {
-		return clientService.save(client);
+	public ResponseEntity<?> create(@RequestBody Client client) {
+		
+		Client newClient = null;
+		Map<String, Object> response = new HashMap<String, Object>();
+		
+		try {
+			newClient = clientService.save(client);
+		} catch(DataAccessException e) {
+			response.put("message", "Server Error");
+			response.put("error", e.getMessage());
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		response.put("message", "Client created!");
+		response.put("client", newClient);
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
 	}
 	
 	@PutMapping("/clients/{id}")
