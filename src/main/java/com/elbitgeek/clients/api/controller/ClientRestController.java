@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.elbitgeek.clients.api.entity.Client;
@@ -77,19 +76,51 @@ public class ClientRestController {
 	}
 	
 	@PutMapping("/clients/{id}")
-	@ResponseStatus(HttpStatus.CREATED)
-	public Client update(@RequestBody Client newClient, @PathVariable Long id) {
-		Client client = clientService.findById(id);
-		client.setFirstName(newClient.getFirstName());
-		client.setLastName(newClient.getLastName());
-		client.setEmail(newClient.getEmail());
+	public ResponseEntity<?> update(@RequestBody Client newClient, @PathVariable Long id) {
 		
-		return clientService.save(client);
+		Client client = clientService.findById(id);
+		Client clientUpdated = null;
+		Map<String, Object> response = new HashMap<String, Object>();
+		
+		if(client == null) {
+			response.put("message", "Client id not found");
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
+		}
+		
+		try {
+			client.setFirstName(newClient.getFirstName());
+			client.setLastName(newClient.getLastName());
+			client.setEmail(newClient.getEmail());
+			
+			clientUpdated = clientService.save(client);
+		} catch(DataAccessException e) {
+			response.put("message", "Server Error");
+			response.put("error", e.getMessage());
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		response.put("message", "Client updated!");
+		response.put("client", clientUpdated);
+		
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
 	}
 	
 	@DeleteMapping("/clients/{id}")
-	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void delete(@PathVariable Long id) {
-		clientService.delete(id);
+	public ResponseEntity<?> delete(@PathVariable Long id) {
+		
+		Map<String, Object> response = new HashMap<String, Object>();
+		
+		try {
+			clientService.delete(id);
+		} catch(DataAccessException e) {
+			response.put("message", "Server Error");
+			response.put("error", e.getMessage());
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+		response.put("message", "Client deleted!");
+		
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.OK);
+		
 	}
 }
